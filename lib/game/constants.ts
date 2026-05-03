@@ -15,10 +15,7 @@ export const PLAYER_WIDTH = 32;
 export const PLAYER_HEIGHT = 48;
 export const PLAYER_SPEED = 5.5;
 export const PLAYER_JUMP_FORCE = -13;
-export const PLAYER_MAX_HEALTH = 5;
-export const PLAYER_START_AMMO = 30; // GDD § 2.3: munição inicial (Bombons)
 export const PLAYER_SHOOT_COOLDOWN = 12; // frames
-export const PLAYER_INVINCIBLE_TIME = 90; // frames (1.5s at 60fps)
 
 // Projectiles
 export const PLAYER_BULLET_SPEED = 10;
@@ -66,7 +63,6 @@ export const BOSS_BULLET_SPREAD = 0.3; // radians
 // Collectibles
 export const COLLECTIBLE_SIZE = 20;
 export const HEALTH_RESTORE = 1;
-export const AMMO_RESTORE = 10;
 export const DATA_CHIP_SCORE = 100;
 
 // Score (GDD v2.0: drone=10, rastreador=25, atirador=40)

@@ -8,10 +8,7 @@ import {
   PLAYER_HEIGHT,
   PLAYER_SPEED,
   PLAYER_JUMP_FORCE,
-  PLAYER_MAX_HEALTH,
-  PLAYER_START_AMMO,
   PLAYER_SHOOT_COOLDOWN,
-  PLAYER_INVINCIBLE_TIME,
   PLAYER_BULLET_SPEED,
   PLAYER_BULLET_DAMAGE,
   BULLET_WIDTH,
@@ -29,9 +26,6 @@ import {
   playShootSound,
   playHitSound,
   playHealthPickupSound,
-  playAmmoPickupSound,
-  playShieldBuffSound,
-  playMilkshakeBuffSound,
   playWeaponUnlockSound,
   playCollectSound,
 } from "./audio";
@@ -47,23 +41,19 @@ export function createPlayer(x: number, y: number): Player {
     vx: 0,
     vy: 0,
     direction: "right",
-    health: PLAYER_MAX_HEALTH,
-    maxHealth: PLAYER_MAX_HEALTH,
-    ammo: PLAYER_START_AMMO,
-    maxAmmo: PLAYER_START_AMMO,
+    health: 0,
+    maxHealth: 0,
+    ammo: 0,
+    maxAmmo: 0,
     score: 0,
     isGrounded: false,
     isJumping: false,
     isShooting: false,
     shootCooldown: 0,
-    invincible: false,
-    invincibleTimer: 0,
     animFrame: 0,
     animTimer: 0,
     alive: true,
     canShoot: false,
-    shieldActive: false,
-    milkshakeTimer: 0,
   };
 }
 
@@ -153,68 +143,25 @@ export function updatePlayer(
     player.x = bossSection.startX;
   }
 
-  // Invincibility timer
-  if (player.invincible) {
-    player.invincibleTimer--;
-    if (player.invincibleTimer <= 0) {
-      player.invincible = false;
-    }
-  }
-
   // Shooting
   let newProjectile: Projectile | null = null;
   if (player.shootCooldown > 0) player.shootCooldown--;
 
-  // Tick dos buffs temporais
-  if (player.milkshakeTimer > 0) player.milkshakeTimer--;
-
-  // Desbloqueio do tiro só acontece depois do Lançador de Bombom (GDD §5.3)
   const shootAllowed =
-    player.canShoot &&
-    input.shootPressed &&
-    player.shootCooldown <= 0 &&
-    (player.ammo > 0 || player.milkshakeTimer > 0);
+    player.canShoot && input.shootPressed && player.shootCooldown <= 0;
   if (shootAllowed) {
-    // Milkshake: munição infinita por 8s — não decrementa ammo
-    if (player.milkshakeTimer <= 0) player.ammo--;
     player.shootCooldown = PLAYER_SHOOT_COOLDOWN;
     player.isShooting = true;
 
-    // Origem do projétil — sempre sai do lado correto do player conforme direction
     const bulletX =
       player.direction === "right"
         ? player.x + player.width
         : player.x - BULLET_WIDTH;
     const bulletY = player.y + player.height * 0.35;
 
-    // Vetor de disparo: se foi via mouse, aponta pro cursor; senão, horizontal
-    let vx: number;
-    let vy: number;
-    if (input.shootFromMouse) {
-      const originX = bulletX + BULLET_WIDTH / 2;
-      const originY = bulletY + BULLET_HEIGHT / 2;
-      const dx = input.mouseWorldX - originX;
-      const dy = input.mouseWorldY - originY;
-      const len = Math.hypot(dx, dy);
-      if (len > 0.0001) {
-        vx = (dx / len) * PLAYER_BULLET_SPEED;
-        vy = (dy / len) * PLAYER_BULLET_SPEED;
-        // Alinhar direção do player com o alvo (faz a arte olhar pra lá)
-        player.direction = dx >= 0 ? "right" : "left";
-      } else {
-        vx =
-          player.direction === "right"
-            ? PLAYER_BULLET_SPEED
-            : -PLAYER_BULLET_SPEED;
-        vy = 0;
-      }
-    } else {
-      vx =
-        player.direction === "right"
-          ? PLAYER_BULLET_SPEED
-          : -PLAYER_BULLET_SPEED;
-      vy = 0;
-    }
+    const vx =
+      player.direction === "right" ? PLAYER_BULLET_SPEED : -PLAYER_BULLET_SPEED;
+    const vy = 0;
 
     newProjectile = {
       x: bulletX,
@@ -297,41 +244,9 @@ export function updatePlayer(
             yOffset: -100,
           });
           break;
-        case "ammo":
-          // GDD §5.3: capacidade limitada por maxAmmo (30 até Z2, 60 na Z3)
-          player.ammo = Math.min(
-            player.maxAmmo,
-            player.ammo + collectible.value,
-          );
-          playAmmoPickupSound();
-          break;
         case "data_chip":
           player.score += collectible.value;
           playCollectSound();
-          break;
-        case "shield_buff":
-          // Bolo: escudo que absorve o próximo hit (GDD §2.4)
-          player.shieldActive = true;
-          playShieldBuffSound();
-          state.floatingMessages.push({
-            text: "★ ESCUDO DE BOLO ATIVO! ★",
-            color: "#FF8FB8",
-            life: 150,
-            maxLife: 150,
-            yOffset: -80,
-          });
-          break;
-        case "milkshake_buff":
-          // Milkshake: munição infinita por 8s — 8s * 60fps = 480 frames
-          player.milkshakeTimer = 480;
-          playMilkshakeBuffSound();
-          state.floatingMessages.push({
-            text: "★ MUNICAO INFINITA POR 8s! ★",
-            color: "#FFE89B",
-            life: 150,
-            maxLife: 150,
-            yOffset: -80,
-          });
           break;
         case "weapon_unlock":
           // Lançador de Bombom: desbloqueia tiro ao final da Zona 1
@@ -361,30 +276,9 @@ export function updatePlayer(
 }
 
 export function damagePlayer(player: Player, damage: number, state: GameState) {
-  if (player.invincible || !player.alive) return;
-
-  // GDD §2.4: Bolo absorve o próximo hit — escudo consome sem reduzir Doçura
-  if (player.shieldActive) {
-    player.shieldActive = false;
-    player.invincible = true;
-    player.invincibleTimer = PLAYER_INVINCIBLE_TIME;
-    playHitSound();
-    shakeCamera(state.camera, 2, 6);
-    // Partículas rosa do escudo estourando
-    state.particles.push(
-      ...createExplosionParticles(
-        player.x + player.width / 2,
-        player.y + player.height / 2,
-        "#FFB8D0",
-        12,
-      ),
-    );
-    return;
-  }
+  if (!player.alive) return;
 
   player.health -= damage;
-  player.invincible = true;
-  player.invincibleTimer = PLAYER_INVINCIBLE_TIME;
 
   playHitSound();
   shakeCamera(state.camera, 4, 10);

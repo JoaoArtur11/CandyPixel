@@ -46,17 +46,11 @@ export interface Player {
   isJumping: boolean;
   isShooting: boolean;
   shootCooldown: number;
-  invincible: boolean;
-  invincibleTimer: number;
   animFrame: number;
   animTimer: number;
   alive: boolean;
   // GDD §5.3: tiro só desbloqueado ao coletar Lançador de Bombom no fim da Zona 1
   canShoot: boolean;
-  // Buff Bolo: absorve o próximo hit sem reduzir Doçura (GDD §2.4)
-  shieldActive: boolean;
-  // Buff Milkshake: munição infinita por 8s; armazena frames restantes (GDD §2.4)
-  milkshakeTimer: number;
 }
 
 // ---------- Enemies ----------
@@ -127,15 +121,11 @@ export interface Projectile {
 }
 
 // ---------- Collectibles ----------
-// shield_buff   = Bolo (absorve 1 dano e some)
-// milkshake_buff = Milkshake (munição infinita por 8s)
 // weapon_unlock = Lançador de Bombom (fim da Zona 1)
 export type CollectibleType =
   | "health"
   | "ammo"
   | "data_chip"
-  | "shield_buff"
-  | "milkshake_buff"
   | "weapon_unlock";
 
 export interface Collectible {
@@ -251,10 +241,4 @@ export interface InputState {
   shootPressed: boolean;
   pausePressed: boolean;
   unpausePressed: boolean;
-  // Posição do cursor em coordenadas do mundo (já com offset de câmera aplicado).
-  mouseWorldX: number;
-  mouseWorldY: number;
-  // true se o último tiro foi requisitado via clique do mouse.
-  // O projétil então segue o cursor; tecla de tiro mantém direção horizontal.
-  shootFromMouse: boolean;
 }
