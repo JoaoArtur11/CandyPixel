@@ -46,6 +46,8 @@ export interface Player {
   isJumping: boolean;
   isShooting: boolean;
   shootCooldown: number;
+  invincible: boolean;
+  invincibleTimer: number;
   animFrame: number;
   animTimer: number;
   alive: boolean;

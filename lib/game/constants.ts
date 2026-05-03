@@ -15,7 +15,9 @@ export const PLAYER_WIDTH = 32;
 export const PLAYER_HEIGHT = 48;
 export const PLAYER_SPEED = 5.5;
 export const PLAYER_JUMP_FORCE = -13;
+export const PLAYER_MAX_HEALTH = 5;
 export const PLAYER_SHOOT_COOLDOWN = 12; // frames
+export const PLAYER_INVINCIBLE_TIME = 90; // frames (1.5s at 60fps)
 
 // Projectiles
 export const PLAYER_BULLET_SPEED = 10;

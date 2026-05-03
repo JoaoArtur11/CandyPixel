@@ -8,7 +8,9 @@ import {
   PLAYER_HEIGHT,
   PLAYER_SPEED,
   PLAYER_JUMP_FORCE,
+  PLAYER_MAX_HEALTH,
   PLAYER_SHOOT_COOLDOWN,
+  PLAYER_INVINCIBLE_TIME,
   PLAYER_BULLET_SPEED,
   PLAYER_BULLET_DAMAGE,
   BULLET_WIDTH,
@@ -41,8 +43,8 @@ export function createPlayer(x: number, y: number): Player {
     vx: 0,
     vy: 0,
     direction: "right",
-    health: 0,
-    maxHealth: 0,
+    health: PLAYER_MAX_HEALTH,
+    maxHealth: PLAYER_MAX_HEALTH,
     ammo: 0,
     maxAmmo: 0,
     score: 0,
@@ -50,6 +52,8 @@ export function createPlayer(x: number, y: number): Player {
     isJumping: false,
     isShooting: false,
     shootCooldown: 0,
+    invincible: false,
+    invincibleTimer: 0,
     animFrame: 0,
     animTimer: 0,
     alive: true,
@@ -141,6 +145,14 @@ export function updatePlayer(
     player.x < bossSection.startX
   ) {
     player.x = bossSection.startX;
+  }
+
+  // Invincibility timer
+  if (player.invincible) {
+    player.invincibleTimer--;
+    if (player.invincibleTimer <= 0) {
+      player.invincible = false;
+    }
   }
 
   // Shooting
@@ -302,9 +314,11 @@ export function updatePlayer(
 }
 
 export function damagePlayer(player: Player, damage: number, state: GameState) {
-  if (!player.alive) return;
+  if (player.invincible || !player.alive) return;
 
   player.health -= damage;
+  player.invincible = true;
+  player.invincibleTimer = PLAYER_INVINCIBLE_TIME;
 
   playHitSound();
   shakeCamera(state.camera, 4, 10);
