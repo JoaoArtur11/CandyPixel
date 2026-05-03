@@ -241,4 +241,10 @@ export interface InputState {
   shootPressed: boolean;
   pausePressed: boolean;
   unpausePressed: boolean;
+  // Posição do cursor em coordenadas do mundo (já com offset de câmera aplicado).
+  mouseWorldX: number;
+  mouseWorldY: number;
+  // true se o último tiro foi requisitado via clique do mouse.
+  // O projétil então segue o cursor; tecla de tiro mantém direção horizontal.
+  shootFromMouse: boolean;
 }
