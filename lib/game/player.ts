@@ -30,6 +30,7 @@ import {
   playHitSound,
   playHealthPickupSound,
   playAmmoPickupSound,
+  playShieldBuffSound,
   playWeaponUnlockSound,
   playCollectSound,
 } from "./audio";
@@ -60,6 +61,7 @@ export function createPlayer(x: number, y: number): Player {
     animTimer: 0,
     alive: true,
     canShoot: false,
+    shieldActive: false,
   };
 }
 
@@ -300,6 +302,18 @@ export function updatePlayer(
           player.score += collectible.value;
           playCollectSound();
           break;
+        case "shield_buff":
+          // Bolo: escudo que absorve o próximo hit (GDD §2.4)
+          player.shieldActive = true;
+          playShieldBuffSound();
+          state.floatingMessages.push({
+            text: "★ ESCUDO DE BOLO ATIVO! ★",
+            color: "#FF8FB8",
+            life: 150,
+            maxLife: 150,
+            yOffset: -80,
+          });
+          break;
         case "weapon_unlock":
           // Lançador de Bombom: desbloqueia tiro ao final da Zona 1
           player.canShoot = true;
@@ -329,6 +343,25 @@ export function updatePlayer(
 
 export function damagePlayer(player: Player, damage: number, state: GameState) {
   if (player.invincible || !player.alive) return;
+
+  // GDD §2.4: Bolo absorve o próximo hit — escudo consome sem reduzir Doçura
+  if (player.shieldActive) {
+    player.shieldActive = false;
+    player.invincible = true;
+    player.invincibleTimer = PLAYER_INVINCIBLE_TIME;
+    playHitSound();
+    shakeCamera(state.camera, 2, 6);
+    // Partículas rosa do escudo estourando
+    state.particles.push(
+      ...createExplosionParticles(
+        player.x + player.width / 2,
+        player.y + player.height / 2,
+        "#FFB8D0",
+        12,
+      ),
+    );
+    return;
+  }
 
   player.health -= damage;
   player.invincible = true;

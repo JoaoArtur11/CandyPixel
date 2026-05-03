@@ -53,6 +53,8 @@ export interface Player {
   alive: boolean;
   // GDD §5.3: tiro só desbloqueado ao coletar Lançador de Bombom no fim da Zona 1
   canShoot: boolean;
+  // Buff Bolo: absorve o próximo hit sem reduzir Doçura (GDD §2.4)
+  shieldActive: boolean;
 }
 
 // ---------- Enemies ----------
@@ -124,11 +126,13 @@ export interface Projectile {
 
 // ---------- Collectibles ----------
 // ammo          = Bombom (recarrega +AMMO_RESTORE munições, limitado por maxAmmo)
+// shield_buff   = Bolo (absorve 1 dano e some)
 // weapon_unlock = Lançador de Bombom (fim da Zona 1)
 export type CollectibleType =
   | "health"
   | "ammo"
   | "data_chip"
+  | "shield_buff"
   | "weapon_unlock";
 
 export interface Collectible {
