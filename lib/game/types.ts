@@ -55,6 +55,8 @@ export interface Player {
   canShoot: boolean;
   // Buff Bolo: absorve o próximo hit sem reduzir Doçura (GDD §2.4)
   shieldActive: boolean;
+  // Buff Milkshake: munição infinita por 8s; armazena frames restantes (GDD §2.4)
+  milkshakeTimer: number;
 }
 
 // ---------- Enemies ----------
@@ -127,12 +129,14 @@ export interface Projectile {
 // ---------- Collectibles ----------
 // ammo          = Bombom (recarrega +AMMO_RESTORE munições, limitado por maxAmmo)
 // shield_buff   = Bolo (absorve 1 dano e some)
+// milkshake_buff = Milkshake (munição infinita por 8s)
 // weapon_unlock = Lançador de Bombom (fim da Zona 1)
 export type CollectibleType =
   | "health"
   | "ammo"
   | "data_chip"
   | "shield_buff"
+  | "milkshake_buff"
   | "weapon_unlock";
 
 export interface Collectible {

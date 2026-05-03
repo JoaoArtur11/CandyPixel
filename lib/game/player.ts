@@ -31,6 +31,7 @@ import {
   playHealthPickupSound,
   playAmmoPickupSound,
   playShieldBuffSound,
+  playMilkshakeBuffSound,
   playWeaponUnlockSound,
   playCollectSound,
 } from "./audio";
@@ -62,6 +63,7 @@ export function createPlayer(x: number, y: number): Player {
     alive: true,
     canShoot: false,
     shieldActive: false,
+    milkshakeTimer: 0,
   };
 }
 
@@ -163,13 +165,17 @@ export function updatePlayer(
   let newProjectile: Projectile | null = null;
   if (player.shootCooldown > 0) player.shootCooldown--;
 
+  // Tick dos buffs temporais
+  if (player.milkshakeTimer > 0) player.milkshakeTimer--;
+
   const shootAllowed =
     player.canShoot &&
     input.shootPressed &&
     player.shootCooldown <= 0 &&
-    player.ammo > 0;
+    (player.ammo > 0 || player.milkshakeTimer > 0);
   if (shootAllowed) {
-    player.ammo--;
+    // Milkshake: munição infinita por 8s — não decrementa ammo
+    if (player.milkshakeTimer <= 0) player.ammo--;
     player.shootCooldown = PLAYER_SHOOT_COOLDOWN;
     player.isShooting = true;
 
@@ -309,6 +315,18 @@ export function updatePlayer(
           state.floatingMessages.push({
             text: "★ ESCUDO DE BOLO ATIVO! ★",
             color: "#FF8FB8",
+            life: 150,
+            maxLife: 150,
+            yOffset: -80,
+          });
+          break;
+        case "milkshake_buff":
+          // Milkshake: munição infinita por 8s — 8s * 60fps = 480 frames
+          player.milkshakeTimer = 480;
+          playMilkshakeBuffSound();
+          state.floatingMessages.push({
+            text: "★ MUNICAO INFINITA POR 8s! ★",
+            color: "#FFE89B",
             life: 150,
             maxLife: 150,
             yOffset: -80,
