@@ -9,6 +9,7 @@ import {
   PLAYER_SPEED,
   PLAYER_JUMP_FORCE,
   PLAYER_MAX_HEALTH,
+  PLAYER_START_AMMO,
   PLAYER_SHOOT_COOLDOWN,
   PLAYER_INVINCIBLE_TIME,
   PLAYER_BULLET_SPEED,
@@ -28,6 +29,7 @@ import {
   playShootSound,
   playHitSound,
   playHealthPickupSound,
+  playAmmoPickupSound,
   playWeaponUnlockSound,
   playCollectSound,
 } from "./audio";
@@ -45,8 +47,8 @@ export function createPlayer(x: number, y: number): Player {
     direction: "right",
     health: PLAYER_MAX_HEALTH,
     maxHealth: PLAYER_MAX_HEALTH,
-    ammo: 0,
-    maxAmmo: 0,
+    ammo: PLAYER_START_AMMO,
+    maxAmmo: PLAYER_START_AMMO,
     score: 0,
     isGrounded: false,
     isJumping: false,
@@ -160,8 +162,12 @@ export function updatePlayer(
   if (player.shootCooldown > 0) player.shootCooldown--;
 
   const shootAllowed =
-    player.canShoot && input.shootPressed && player.shootCooldown <= 0;
+    player.canShoot &&
+    input.shootPressed &&
+    player.shootCooldown <= 0 &&
+    player.ammo > 0;
   if (shootAllowed) {
+    player.ammo--;
     player.shootCooldown = PLAYER_SHOOT_COOLDOWN;
     player.isShooting = true;
 
@@ -281,6 +287,14 @@ export function updatePlayer(
             maxLife: 90,
             yOffset: -100,
           });
+          break;
+        case "ammo":
+          // GDD §5.3: capacidade limitada por maxAmmo (30 até Z2, 60 na Z3)
+          player.ammo = Math.min(
+            player.maxAmmo,
+            player.ammo + collectible.value,
+          );
+          playAmmoPickupSound();
           break;
         case "data_chip":
           player.score += collectible.value;

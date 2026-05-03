@@ -123,6 +123,7 @@ export interface Projectile {
 }
 
 // ---------- Collectibles ----------
+// ammo          = Bombom (recarrega +AMMO_RESTORE munições, limitado por maxAmmo)
 // weapon_unlock = Lançador de Bombom (fim da Zona 1)
 export type CollectibleType =
   | "health"
