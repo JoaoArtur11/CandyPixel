@@ -168,6 +168,7 @@ export function updatePlayer(
   // Tick dos buffs temporais
   if (player.milkshakeTimer > 0) player.milkshakeTimer--;
 
+  // Desbloqueio do tiro só acontece depois do Lançador de Bombom (GDD §5.3)
   const shootAllowed =
     player.canShoot &&
     input.shootPressed &&

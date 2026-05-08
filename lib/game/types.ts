@@ -127,7 +127,6 @@ export interface Projectile {
 }
 
 // ---------- Collectibles ----------
-// ammo          = Bombom (recarrega +AMMO_RESTORE munições, limitado por maxAmmo)
 // shield_buff   = Bolo (absorve 1 dano e some)
 // milkshake_buff = Milkshake (munição infinita por 8s)
 // weapon_unlock = Lançador de Bombom (fim da Zona 1)

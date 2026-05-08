@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Fundo rosa candy -->
+  <rect width="64" height="64" rx="12" fill="#FFC0DE"/>
+  <!-- Palito -->
+  <rect x="30" y="34" width="4" height="24" rx="2" fill="#FFF8F0" stroke="#3A2840" stroke-width="1.2"/>
+  <!-- Cabeça do pirulito -->
+  <circle cx="32" cy="26" r="18" fill="#FFF8F0" stroke="#3A2840" stroke-width="2"/>
+  <!-- Espiral candy: 4 braços coloridos -->
+  <g transform="translate(32 26)">
+    <path d="M 0 0 Q 6 -2 8 -8 Q 4 -14 -4 -12 Q -12 -6 -8 2 Q -2 8 6 4"
+          fill="none" stroke="#FF5FA8" stroke-width="3.2" stroke-linecap="round"/>
+    <path d="M 0 0 Q -6 2 -8 8 Q -4 14 4 12 Q 12 6 8 -2 Q 2 -8 -6 -4"
+          fill="none" stroke="#B08BE8" stroke-width="3.2" stroke-linecap="round"/>
+    <path d="M 0 0 Q 4 -6 12 -4 Q 14 4 8 8"
+          fill="none" stroke="#FFB347" stroke-width="2.4" stroke-linecap="round"/>
+    <path d="M 0 0 Q -4 6 -12 4 Q -14 -4 -8 -8"
+          fill="none" stroke="#7FBE5C" stroke-width="2.4" stroke-linecap="round"/>
+  </g>
+  <!-- Brilho -->
+  <ellipse cx="25" cy="19" rx="4" ry="2.5" fill="#FFFFFF" opacity="0.75"/>
+</svg>
