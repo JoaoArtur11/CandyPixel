@@ -58,28 +58,6 @@ import {
 import { createExplosionParticles } from "./particles";
 import { shakeCamera } from "./camera";
 
-function getBossShootCooldownByPhase(phase: number): number {
-  switch (phase) {
-    case 3:
-      return BOSS_SHOOT_COOLDOWN_P3;
-    case 2:
-      return BOSS_SHOOT_COOLDOWN_P2;
-    default:
-      return BOSS_SHOOT_COOLDOWN_P1;
-  }
-}
-
-function getBossSpawnCooldownByPhase(phase: number): number {
-  switch (phase) {
-    case 3:
-      return BOSS_SPAWN_COOLDOWN_P3;
-    case 2:
-      return BOSS_SPAWN_COOLDOWN_P2;
-    default:
-      return BOSS_SPAWN_COOLDOWN_P1;
-  }
-}
-
 export function createDrone(
   x: number,
   y: number,
@@ -309,8 +287,8 @@ function updateTracker(enemy: Enemy, state: GameState) {
       enemy.direction = "left";
     }
 
-    // Hover bob absoluto evita drift vertical acumulado ao longo do tempo
-    enemy.y = (enemy.homeY ?? enemy.y) + Math.sin(enemy.animTimer * 0.06) * 4;
+    // Hover bob sutil durante patrulha
+    enemy.y += Math.sin(enemy.animTimer * 0.06) * 0.2;
   }
 
   enemy.x += enemy.vx;
@@ -352,10 +330,7 @@ function updateTurret(
 }
 
 function updateBoss(enemy: Enemy, state: GameState, projectiles: Projectile[]) {
-  // Fases do boss (GDD):
-  // Fase 1: HP 15-11 | tiro simples
-  // Fase 2: HP 10-6  | tiro duplo + mais pressão
-  // Fase 3: HP 5-1   | rajada em leque + ondas mistas
+  // Fase 1: HP 15-11, Fase 2: HP 10-6, Fase 3: HP 5-1 (GDD v2.0)
   const hp = enemy.health;
 
   // Transição para fase 2
@@ -402,7 +377,12 @@ function updateBoss(enemy: Enemy, state: GameState, projectiles: Projectile[]) {
 
   // Tiro — padrão diferente por fase
   enemy.shootTimer++;
-  const cooldown = getBossShootCooldownByPhase(phase);
+  const cooldown =
+    phase === 3
+      ? BOSS_SHOOT_COOLDOWN_P3
+      : phase === 2
+        ? BOSS_SHOOT_COOLDOWN_P2
+        : BOSS_SHOOT_COOLDOWN_P1;
 
   if (enemy.shootTimer >= cooldown) {
     enemy.shootTimer = 0;
@@ -471,7 +451,12 @@ function updateBoss(enemy: Enemy, state: GameState, projectiles: Projectile[]) {
   }
 
   // Spawn de minions por fase
-  const spawnCooldown = getBossSpawnCooldownByPhase(phase);
+  const spawnCooldown =
+    phase === 3
+      ? BOSS_SPAWN_COOLDOWN_P3
+      : phase === 2
+        ? BOSS_SPAWN_COOLDOWN_P2
+        : BOSS_SPAWN_COOLDOWN_P1;
 
   if (
     enemy.bossAttackTimer! > 0 &&
