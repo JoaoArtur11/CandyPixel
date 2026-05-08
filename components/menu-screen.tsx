@@ -22,6 +22,12 @@ export default function MenuScreen({
   const timeRef = useRef(0);
   const [selectedIndex, setSelectedIndex] = useState(0);
 
+  const leftX = 60;
+  const startY = 310;
+  const itemSpacing = 70;
+  const wrapperW = 420;
+  const wrapperH = 54;
+
   const menuItems = [
     { label: "JOGAR", action: onPlay },
     { label: "CONFIGURACOES", action: onSettings },
@@ -89,8 +95,6 @@ export default function MenuScreen({
       drawMenuCupcake(ctx, CANVAS_WIDTH - 60, CANVAS_HEIGHT - 90, 32, t + 40);
 
       // ========= Layout alinhado à esquerda =========
-      const leftX = 60;
-
       // Banner "placa de confeitaria" atrás do título
       const bannerY = 110;
       const bannerH = 128;
@@ -140,11 +144,6 @@ export default function MenuScreen({
       ctx.fillText("Defenda o Doce!", leftX + 4, titleY + 34);
 
       // ========= Itens de menu — balas embrulhadas alinhadas à esquerda =========
-      const startY = 310;
-      const itemSpacing = 70;
-      const wrapperW = 420;
-      const wrapperH = 54;
-
       for (let i = 0; i < menuItems.length; i++) {
         const itemY = startY + i * itemSpacing;
         const isSelected = i === selectedIndex;
@@ -205,6 +204,54 @@ export default function MenuScreen({
     return () => cancelAnimationFrame(animId);
   }, [selectedIndex, menuItems]);
 
+  const getMenuIndexFromMouse = (
+    e: React.MouseEvent<HTMLCanvasElement>,
+  ): number => {
+    const canvas = canvasRef.current;
+    if (!canvas) return -1;
+
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = CANVAS_WIDTH / rect.width;
+    const scaleY = CANVAS_HEIGHT / rect.height;
+    const x = (e.clientX - rect.left) * scaleX;
+    const y = (e.clientY - rect.top) * scaleY;
+
+    for (let i = 0; i < menuItems.length; i++) {
+      const itemY = startY + i * itemSpacing;
+      const minX = leftX;
+      const maxX = leftX + wrapperW;
+      const minY = itemY - wrapperH / 2;
+      const maxY = itemY + wrapperH / 2;
+
+      if (x >= minX && x <= maxX && y >= minY && y <= maxY) {
+        return i;
+      }
+    }
+
+    return -1;
+  };
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const hoveredIndex = getMenuIndexFromMouse(e);
+    if (hoveredIndex !== -1 && hoveredIndex !== selectedIndex) {
+      setSelectedIndex(hoveredIndex);
+      playMenuSelectSound();
+    }
+
+    const canvas = canvasRef.current;
+    if (canvas) {
+      canvas.style.cursor = hoveredIndex !== -1 ? "pointer" : "default";
+    }
+  };
+
+  const handleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const clickedIndex = getMenuIndexFromMouse(e);
+    if (clickedIndex !== -1) {
+      setSelectedIndex(clickedIndex);
+      menuItems[clickedIndex].action();
+    }
+  };
+
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if (e.code === "ArrowUp" || e.code === "KeyW") {
@@ -246,6 +293,8 @@ export default function MenuScreen({
         height: "auto",
         aspectRatio: `${CANVAS_WIDTH} / ${CANVAS_HEIGHT}`,
       }}
+      onMouseMove={handleMouseMove}
+      onClick={handleClick}
       tabIndex={0}
     />
   );

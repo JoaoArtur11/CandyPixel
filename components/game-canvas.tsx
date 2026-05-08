@@ -4,7 +4,7 @@ import { useRef, useEffect, useCallback } from "react";
 import type { GameState, InputState } from "@/lib/game/types";
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from "@/lib/game/constants";
 import { gameUpdate, gameRender } from "@/lib/game/engine";
-import { createInputState, setupInput, consumePressed } from "@/lib/game/input";
+import { createInputState, setupInput } from "@/lib/game/input";
 
 interface GameCanvasProps {
   gameState: React.MutableRefObject<GameState>;
@@ -64,6 +64,39 @@ export default function GameCanvas({
     animFrameRef.current = requestAnimationFrame(gameLoop);
   }, [gameState, inputState, onScreenChange]);
 
+  const updateMouseWorldPosition = useCallback(
+    (clientX: number, clientY: number) => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = CANVAS_WIDTH / rect.width;
+      const scaleY = CANVAS_HEIGHT / rect.height;
+      const screenX = (clientX - rect.left) * scaleX;
+      const screenY = (clientY - rect.top) * scaleY;
+      const cam = gameState.current.camera;
+      inputState.current.mouseWorldX = screenX + cam.x;
+      inputState.current.mouseWorldY = screenY + cam.y;
+    },
+    [gameState, inputState],
+  );
+
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent<HTMLCanvasElement>) => {
+      if (e.button !== 0) return;
+      e.preventDefault();
+      updateMouseWorldPosition(e.clientX, e.clientY);
+      inputState.current.shoot = true;
+      inputState.current.shootPressed = true;
+      inputState.current.shootFromMouse = true;
+    },
+    [inputState, updateMouseWorldPosition],
+  );
+
+  const handleMouseUp = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (e.button !== 0) return;
+    inputState.current.shoot = false;
+  }, [inputState]);
+
   useEffect(() => {
     const cleanup = setupInput(inputState.current);
     animFrameRef.current = requestAnimationFrame(gameLoop);
@@ -81,6 +114,9 @@ export default function GameCanvas({
       height={CANVAS_HEIGHT}
       className="block"
       onMouseMove={handleMouseMove}
+      onMouseDown={handleMouseDown}
+      onMouseUp={handleMouseUp}
+      onContextMenu={(e) => e.preventDefault()}
       style={{
         imageRendering: "pixelated",
         width: "100%",
