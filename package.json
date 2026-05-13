@@ -2,11 +2,29 @@
   "name": "candy-pixel",
   "version": "0.1.0",
   "private": true,
+  "main": "electron/main.js",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "electron": "next build && electron .",
+    "electron:build": "next build && electron-builder"
+  },
+  "build": {
+    "appId": "com.candypixel.game",
+    "productName": "CandyPixel",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "out/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": "nsis"
+    }
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
@@ -64,6 +82,8 @@
     "@types/node": "^22",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0",
     "postcss": "^8.5",
     "tailwindcss": "^4.2.0",
     "tw-animate-css": "1.3.3",
