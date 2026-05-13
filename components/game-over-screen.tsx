@@ -1,8 +1,28 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import { CANVAS_WIDTH, CANVAS_HEIGHT, COLORS } from "@/lib/game/constants";
 import { playMenuSelectSound } from "@/lib/game/audio";
+
+/** Mesmas medidas usadas no desenho dos botões (hit-test de clique). */
+const GO_BTN_W = 280;
+const GO_BTN_H = 44;
+const GO_BTN_Y1 = 330;
+const GO_BTN_Y2 = 388;
+
+function canvasLogicalPoint(
+  canvas: HTMLCanvasElement,
+  clientX: number,
+  clientY: number,
+): { x: number; y: number } {
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = CANVAS_WIDTH / rect.width;
+  const scaleY = CANVAS_HEIGHT / rect.height;
+  return {
+    x: (clientX - rect.left) * scaleX,
+    y: (clientY - rect.top) * scaleY,
+  };
+}
 
 interface GameOverScreenProps {
   score: number;
@@ -17,6 +37,8 @@ export default function GameOverScreen({
 }: GameOverScreenProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const timeRef = useRef(0);
+  /** Qual botão está sob o mouse (null = nenhum; desenho sem destaque fixo no primeiro). */
+  const hoverButtonRef = useRef<"retry" | "menu" | null>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -95,49 +117,59 @@ export default function GameOverScreen({
       ctx.fillText(`Pontuacao: ${score}`, CANVAS_WIDTH / 2, 278);
       ctx.shadowBlur = 0;
 
-      // Botão: Tentar Novamente
-      const btnY1 = 330;
-      const btnY2 = 388;
-      const btnW = 280;
-      const btnH = 44;
+      const btnY1 = GO_BTN_Y1;
+      const btnY2 = GO_BTN_Y2;
+      const btnW = GO_BTN_W;
+      const btnH = GO_BTN_H;
+      const btnX = CANVAS_WIDTH / 2 - btnW / 2;
+      const hover = hoverButtonRef.current;
 
-      // Gradiente rosa-quente para o botão principal
-      const btnGrad = ctx.createLinearGradient(
-        CANVAS_WIDTH / 2 - btnW / 2,
-        btnY1,
-        CANVAS_WIDTH / 2 + btnW / 2,
-        btnY1,
-      );
-      btnGrad.addColorStop(0, COLORS.magenta + "D0");
-      btnGrad.addColorStop(1, COLORS.yellow + "D0");
-      ctx.fillStyle = btnGrad;
-      ctx.shadowColor = COLORS.playerGlow;
-      ctx.shadowBlur = 10;
-      ctx.beginPath();
-      ctx.roundRect(CANVAS_WIDTH / 2 - btnW / 2, btnY1, btnW, btnH, 22);
-      ctx.fill();
-      ctx.shadowBlur = 0;
-      ctx.strokeStyle = COLORS.playerGlow;
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.roundRect(CANVAS_WIDTH / 2 - btnW / 2, btnY1, btnW, btnH, 22);
-      ctx.stroke();
-      ctx.fillStyle = COLORS.black;
+      const drawPrimaryStyle = (y: number) => {
+        const g = ctx.createLinearGradient(btnX, y, btnX + btnW, y);
+        g.addColorStop(0, COLORS.magenta + "D0");
+        g.addColorStop(1, COLORS.yellow + "D0");
+        ctx.fillStyle = g;
+        ctx.shadowColor = COLORS.playerGlow;
+        ctx.shadowBlur = 10;
+        ctx.beginPath();
+        ctx.roundRect(btnX, y, btnW, btnH, 22);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = COLORS.playerGlow;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.roundRect(btnX, y, btnW, btnH, 22);
+        ctx.stroke();
+      };
+
+      const drawMutedStyle = (y: number) => {
+        ctx.fillStyle = COLORS.white + "20";
+        ctx.beginPath();
+        ctx.roundRect(btnX, y, btnW, btnH, 22);
+        ctx.fill();
+        ctx.strokeStyle = COLORS.white + "50";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.roundRect(btnX, y, btnW, btnH, 22);
+        ctx.stroke();
+      };
+
+      // Tentar Novamente
+      if (hover === "retry") drawPrimaryStyle(btnY1);
+      else drawMutedStyle(btnY1);
+      ctx.textAlign = "center";
+      ctx.fillStyle = hover === "retry" ? COLORS.black : COLORS.white + "CC";
       ctx.font = "bold 17px 'Fredoka', 'Comic Sans MS', cursive, serif";
       ctx.fillText("Tentar Novamente  [ENTER]", CANVAS_WIDTH / 2, btnY1 + 28);
 
-      // Botão: Voltar ao Menu
-      ctx.fillStyle = COLORS.white + "20";
-      ctx.beginPath();
-      ctx.roundRect(CANVAS_WIDTH / 2 - btnW / 2, btnY2, btnW, btnH, 22);
-      ctx.fill();
-      ctx.strokeStyle = COLORS.white + "50";
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.roundRect(CANVAS_WIDTH / 2 - btnW / 2, btnY2, btnW, btnH, 22);
-      ctx.stroke();
-      ctx.fillStyle = COLORS.white + "CC";
-      ctx.font = "15px 'Fredoka', 'Comic Sans MS', cursive, serif";
+      // Voltar ao Menu
+      if (hover === "menu") drawPrimaryStyle(btnY2);
+      else drawMutedStyle(btnY2);
+      ctx.fillStyle = hover === "menu" ? COLORS.black : COLORS.white + "CC";
+      ctx.font =
+        hover === "menu"
+          ? "bold 17px 'Fredoka', 'Comic Sans MS', cursive, serif"
+          : "15px 'Fredoka', 'Comic Sans MS', cursive, serif";
       ctx.fillText("Voltar ao Menu  [ESC]", CANVAS_WIDTH / 2, btnY2 + 28);
 
       animId = requestAnimationFrame(draw);
@@ -164,14 +196,69 @@ export default function GameOverScreen({
     return () => window.removeEventListener("keydown", handleKey);
   }, [onRetry, onMenu]);
 
+  const hitTestButton = useCallback(
+    (clientX: number, clientY: number): "retry" | "menu" | null => {
+      const canvas = canvasRef.current;
+      if (!canvas) return null;
+      const { x, y } = canvasLogicalPoint(canvas, clientX, clientY);
+      const cx = CANVAS_WIDTH / 2;
+      const half = GO_BTN_W / 2;
+      if (x >= cx - half && x <= cx + half) {
+        if (y >= GO_BTN_Y1 && y < GO_BTN_Y1 + GO_BTN_H) return "retry";
+        if (y >= GO_BTN_Y2 && y < GO_BTN_Y2 + GO_BTN_H) return "menu";
+      }
+      return null;
+    },
+    [],
+  );
+
+  // Mouse (não pointer): mesmo padrão do menu/config — evita falha no Electron
+  // após GameCanvas usar setPointerCapture ao atirar.
+  const handleMouseMove = useCallback(
+    (e: React.MouseEvent<HTMLCanvasElement>) => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const hit = hitTestButton(e.clientX, e.clientY);
+      hoverButtonRef.current = hit;
+      canvas.style.cursor = hit ? "pointer" : "default";
+    },
+    [hitTestButton],
+  );
+
+  const handleMouseLeave = useCallback(() => {
+    hoverButtonRef.current = null;
+    const canvas = canvasRef.current;
+    if (canvas) canvas.style.cursor = "default";
+  }, []);
+
+  const handleClick = useCallback(
+    (e: React.MouseEvent<HTMLCanvasElement>) => {
+      const hit = hitTestButton(e.clientX, e.clientY);
+      if (hit === "retry") {
+        e.preventDefault();
+        playMenuSelectSound();
+        onRetry();
+      } else if (hit === "menu") {
+        e.preventDefault();
+        playMenuSelectSound();
+        onMenu();
+      }
+    },
+    [hitTestButton, onRetry, onMenu],
+  );
+
   return (
     <canvas
       ref={canvasRef}
       width={CANVAS_WIDTH}
       height={CANVAS_HEIGHT}
       className="block"
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      onClick={handleClick}
       style={{
         imageRendering: "pixelated",
+        touchAction: "none",
         width: "100%",
         maxWidth: `${CANVAS_WIDTH}px`,
         height: "auto",

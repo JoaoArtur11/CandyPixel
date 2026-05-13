@@ -1,8 +1,26 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import { CANVAS_WIDTH, CANVAS_HEIGHT, COLORS } from "@/lib/game/constants";
 import { playMenuSelectSound } from "@/lib/game/audio";
+
+const VICTORY_BTN_Y = 400;
+const VICTORY_BTN_W = 280;
+const VICTORY_BTN_H = 44;
+
+function canvasLogicalPoint(
+  canvas: HTMLCanvasElement,
+  clientX: number,
+  clientY: number,
+): { x: number; y: number } {
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = CANVAS_WIDTH / rect.width;
+  const scaleY = CANVAS_HEIGHT / rect.height;
+  return {
+    x: (clientX - rect.left) * scaleX,
+    y: (clientY - rect.top) * scaleY,
+  };
+}
 
 interface VictoryScreenProps {
   score: number;
@@ -132,9 +150,9 @@ export default function VictoryScreen({ score, onMenu }: VictoryScreenProps) {
       ctx.shadowBlur = 0;
 
       // Botão voltar ao menu
-      const btnY = 400;
-      const btnW = 280;
-      const btnH = 44;
+      const btnY = VICTORY_BTN_Y;
+      const btnW = VICTORY_BTN_W;
+      const btnH = VICTORY_BTN_H;
       const btnGrad = ctx.createLinearGradient(
         CANVAS_WIDTH / 2 - btnW / 2,
         btnY,
@@ -178,14 +196,55 @@ export default function VictoryScreen({ score, onMenu }: VictoryScreenProps) {
     return () => window.removeEventListener("keydown", handleKey);
   }, [onMenu]);
 
+  const hitTestMenuButton = useCallback(
+    (clientX: number, clientY: number): boolean => {
+      const canvas = canvasRef.current;
+      if (!canvas) return false;
+      const { x, y } = canvasLogicalPoint(canvas, clientX, clientY);
+      const cx = CANVAS_WIDTH / 2;
+      const half = VICTORY_BTN_W / 2;
+      return (
+        x >= cx - half &&
+        x <= cx + half &&
+        y >= VICTORY_BTN_Y &&
+        y < VICTORY_BTN_Y + VICTORY_BTN_H
+      );
+    },
+    [],
+  );
+
+  const handleMouseMove = useCallback(
+    (e: React.MouseEvent<HTMLCanvasElement>) => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      canvas.style.cursor = hitTestMenuButton(e.clientX, e.clientY)
+        ? "pointer"
+        : "default";
+    },
+    [hitTestMenuButton],
+  );
+
+  const handleClick = useCallback(
+    (e: React.MouseEvent<HTMLCanvasElement>) => {
+      if (!hitTestMenuButton(e.clientX, e.clientY)) return;
+      e.preventDefault();
+      playMenuSelectSound();
+      onMenu();
+    },
+    [hitTestMenuButton, onMenu],
+  );
+
   return (
     <canvas
       ref={canvasRef}
       width={CANVAS_WIDTH}
       height={CANVAS_HEIGHT}
       className="block"
+      onMouseMove={handleMouseMove}
+      onClick={handleClick}
       style={{
         imageRendering: "pixelated",
+        touchAction: "none",
         width: "100%",
         maxWidth: `${CANVAS_WIDTH}px`,
         height: "auto",
